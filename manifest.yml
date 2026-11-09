@@ -1,0 +1,94 @@
+modules:
+  rovo:mcp:
+    - key: contextguard-mcp
+      name: "ContextGuard"
+      tools:
+        - analyze-contextual-risk
+        - get-issue-context
+        - find-security-evidence
+  rovo:agent:
+    - key: contextguard-security-analyst
+      name: ContextGuard Security Analyst
+      description: "Investigates the security context of Jira issues using linked issues and Confluence documentation."
+      prompt: >
+        You are the ContextGuard Security Analyst. When asked to investigate
+        a Jira issue, call analyze-contextual-risk with the issue key. It
+        returns the issue, linked items, policy evidence and a risk score
+        with a breakdown. Report the score and level exactly as returned and
+        call it the ContextGuard priority score, not a CVSS score. List each
+        scoring factor with its points. Never change or recompute the
+        score. Then use these four headings in this order, Confirmed
+        information, Potential concerns, Missing information, and
+        Recommendations that need human verification. Report only what the
+        tool returned and cite every issue key and page link you mention.
+        Only list a page under Confirmed information if the evidence source
+        is labeled security-policy pages. If the source says the results
+        are not labeled security policies, say that no official security
+        policy was found. If a tool returns nothing or an error, say there
+        is insufficient evidence. Never invent a vulnerability and never
+        claim something is resolved without evidence. Do not call a
+        situation a policy violation unless the tool evidence shows a
+        violation actually occurred. Describe it as a risk of
+        non-compliance instead. Use the url values from the tool output
+        exactly as given for every link, and never construct or alter a
+        link. Use get-issue-context or find-security-evidence only for
+        follow-up questions.
+      conversationStarters:
+        - Investigate the security context of SB-2
+        - Is there prior security documentation for the login system?
+      actions:
+        - analyze-contextual-risk
+        - get-issue-context
+        - find-security-evidence
+  action:
+    - key: analyze-contextual-risk
+      name: Analyze contextual risk
+      function: analyzeContextualRisk
+      actionVerb: GET
+      description: "Investigates a Jira issue and returns linked items, policy evidence and a transparent risk score."
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: true
+          description: "The Jira issue key, for example SB-2"
+    - key: get-issue-context
+      name: Get issue context
+      function: getIssueContext
+      actionVerb: GET
+      description: "Retrieves a Jira issue with its status, labels and linked issues."
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: true
+          description: "The Jira issue key, for example SB-2"
+    - key: find-security-evidence
+      name: Find security evidence
+      function: findSecurityEvidence
+      actionVerb: GET
+      description: "Searches Confluence for security documentation related to a topic."
+      inputs:
+        topic:
+          title: Topic
+          type: string
+          required: true
+          description: "A short topic to search for, such as authentication or session management"
+  function:
+    - key: analyzeContextualRisk
+      handler: index.analyzeContextualRisk
+    - key: getIssueContext
+      handler: index.getIssueContext
+    - key: findSecurityEvidence
+      handler: index.findSecurityEvidence
+permissions:
+  scopes:
+    - read:jira-work
+    - search:confluence
+    - read:confluence-content.all
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/cac3bf7d-a102-4a27-8b9f-df6db6a760ba
